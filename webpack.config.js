@@ -3,7 +3,6 @@ const path = require('path');
 const autoprefixer = require('autoprefixer');
 
 module.exports = {
-  watch: true,
   mode: process.env.NODE_ENV || 'development',
   module: {
     rules: [
