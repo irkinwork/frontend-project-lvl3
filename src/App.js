@@ -2,10 +2,12 @@ import WatchJS from 'melanke-watchjs';
 import { isURL, isMimeType } from 'validator';
 import axios from 'axios';
 import { uniqueId, differenceBy } from 'lodash';
+import $ from 'jquery';
 
 const { watch } = WatchJS;
 const cors = 'https://cors-anywhere.herokuapp.com/';
 const fields = ['title', 'link', 'description'];
+const parser = new DOMParser();
 
 export default class App {
   constructor(element, state) {
@@ -27,43 +29,40 @@ export default class App {
           </div>
         </div>
       </div>
-      <div id="list">
-        ${this.state.feeds.map(feed => `<div class="feed">
-            <h5>${feed.headerTitle}</h5>
-            <p>${feed.headerDescription}</p>
-            <div class="content">
-              ${feed.items.map(item => `<div class="item mb-1 mt-1">
-              <!-- Modal -->
-                <div class="modal fade" id="exampleModal${item.guid}" tabindex="-1" role="dialog" aria-labelledby="exampleModal${item.guid}Label" aria-hidden="true">
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModal${item.guid}Label">${item.title}</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <div class="modal-body">
-                        ${item.description}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <button type="button" class="btn-sm btn btn-info" data-toggle="modal" data-target="#exampleModal${item.guid}">
-                <i class="fas fa-info"></i>
-                </button>
-                <a href="${item.link}">${item.title}</a>
-                </div>`).join('')}
-            </div>
-            <hr>
-          </div>`).join('')}
-      </div>
-    </div>`;
+      <div id="list"></div>`;
+    this.renderList();
     this.bind();
-    this.element.querySelector('#input').value = this.state.url;
+    // this.element.querySelector('#input').value = this.state.url;
+  }
+
+  renderList() {
+    this.element.querySelector('#list').innerHTML = `
+      ${this.state.feeds.map(feed => `<div class="feed">
+          <h5>${feed.headerTitle}</h5>
+          <p>${feed.headerDescription}</p>
+          <div class="content">
+            ${feed.items.map(item => `<div class="item mb-1 mt-1">
+              <button type="button" class="btn-sm btn btn-info" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
+              <i class="fas fa-info"></i>
+              </button>
+              <a href="${item.link}">${item.title}</a>
+              </div>`).join('')}
+          </div>
+          <hr>
+          </div>`).join('')}
+        </div>
+      </div>`;
   }
 
   bind() {
+    $('#exampleModal').on('show.bs.modal', (event) => {
+      const button = $(event.relatedTarget); // Button that triggered the modal
+      const title = button.data('title'); // Extract info from data-* attributes
+      const description = button.data('description'); // Extract info from data-* attributes
+      const modal = $(event.target);
+      modal.find('.modal-title').text(title);
+      modal.find('.modal-body').text(description);
+    });
     this.element.querySelector('#submit').addEventListener('click', (e) => {
       // console.log('click?');
       e.preventDefault();
@@ -86,7 +85,6 @@ export default class App {
 
   fetchStream(mode, url) {
     const parseData = (data) => {
-      const parser = new DOMParser();
       const content = parser.parseFromString(data, 'text/xml');
       this.parseList(content, url, mode);
       setTimeout(() => {
