@@ -1,7 +1,7 @@
 import WatchJS from 'melanke-watchjs';
 import { isURL, isMimeType } from 'validator';
 import axios from 'axios';
-import { uniqueId, merge, pick, differenceBy, flatten } from 'lodash';
+import { uniqueId, differenceBy } from 'lodash';
 
 const { watch } = WatchJS;
 const cors = 'https://cors-anywhere.herokuapp.com/';
@@ -65,7 +65,7 @@ export default class App {
 
   bind() {
     this.element.querySelector('#submit').addEventListener('click', (e) => {
-      console.log('click?');
+      // console.log('click?');
       e.preventDefault();
       this.state.url = this.element.querySelector('#input').value;
       this.fetchStream('start', this.state.url);
@@ -91,14 +91,14 @@ export default class App {
       this.parseList(content, url, mode);
       setTimeout(() => {
         this.fetchStream('update', url);
-      }, 1000);
-    }
+      }, 5000);
+    };
     switch (mode) {
       case 'start': {
         if (this.validateRSSUrl()) {
           axios.get(`${cors}${url}`, { headers: { 'Access-Control-Allow-Origin': '*' } })
             .then((response) => {
-              console.log('++++valid');
+              // console.log('++++valid');
               if (!this.state.links.includes(url)) {
                 this.state.links.push(url);
                 parseData(response.data);
@@ -110,13 +110,13 @@ export default class App {
               }, 1000);
             })
             .catch(() => {
-              console.log('----errror');
+              // console.log('----errror');
               this.state.url = '';
               this.state.isUrlValid = false;
               throw new Error('Couldn\'t get RSS feed');
             });
         } else {
-          console.log('----invalid');
+          // console.log('----invalid');
           this.state.url = '';
           this.state.isUrlValid = false;
           console.log(this.state);
@@ -126,11 +126,11 @@ export default class App {
       case 'update': {
         axios.get(`${cors}${url}`, { headers: { 'Access-Control-Allow-Origin': '*' } })
           .then((response) => {
-            console.log('++++update request');
-            parseData(response.data)
+            // console.log('++++update request');
+            parseData(response.data);
           })
           .catch(() => {
-            console.log('----update errror');
+            // console.log('----update errror');
             throw new Error('Couldn\'t update RSS feed');
           });
         break;
@@ -154,7 +154,9 @@ export default class App {
           const content = regex.test(innerHTML) ? innerHTML.replace(/<!\[CDATA\[/g, '').replace(/]]>/g, '') : innerHTML;
           return { ...acc, [nodeName]: content, guid };
         }, {}));
-    const feed = { headerTitle, headerDescription, url, items };
+    const feed = {
+      headerTitle, headerDescription, url, items,
+    };
     this.updateList(feed, url, mode);
   }
 
@@ -166,30 +168,17 @@ export default class App {
       }
       case 'update': {
         const currentFeed = this.state.feeds.find(item => item.url === url);
-        const currentFeedIndex = this.state.feeds.findIndex(item => item.url === url);
-        const newItems = differenceBy(currentFeed.items, feed.items, 'link');
-        console.log('new items', flatten(newItems))
-        currentFeed.items.push(flatten(newItems))
-        // const pureItemsData = currentFeed.items.map(item => pick(item, fields));
-        // const updatedItems = merge(pureItemsData, feed.items);
-        // const { length } = this.state.feeds[currentFeedIndex].items;
-        // this.state.feeds[currentFeedIndex].items.splice(0, length, updatedItems);
-        // this.state.feeds[currentFeedIndex].items.push(updatedItems);
-        // console.log(this.state.feeds[currentFeedIndex].items);
-        // console.log(updatedItems);
+        const newItems = differenceBy(feed.items, currentFeed.items, 'link');
+        // console.log('feed.items', feed.items);
+        // console.log('currentFeed.items', currentFeed.items);
+        // console.log('...newItems', ...newItems);
+        if (newItems.length > 0) {
+          currentFeed.items.push(...newItems);
+        }
         break;
       }
       default: break;
     }
-    // if (!this.state.feeds.includes(feed)) {
-    //   console.log('new feed', feed);
-    //   console.log('check this.state.feeds', this.state.feeds);
-    //   this.state.feeds.push(feed);
-    // } else {
-    //   console.log('repeated feed', feed);
-    //   console.log('check this.state.feeds', this.state.feeds);
-
-    // }
   }
 
   init() {
