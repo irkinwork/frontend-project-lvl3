@@ -17,6 +17,23 @@ export default class App {
 
   render() {
     this.element.innerHTML = `
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel"></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Send message</button>
+        </div>
+      </div>
+    </div>
+  </div>
     <div class="container">
       <div class="jumbotron pb-4 pt-4">
         <div class="input-group">
@@ -30,19 +47,18 @@ export default class App {
         </div>
       </div>
       <div id="list"></div>`;
-    this.renderList();
+    this.renderList(this.state.feeds);
     this.bind();
-    // this.element.querySelector('#input').value = this.state.url;
   }
 
-  renderList() {
+  renderList(feeds) {
     this.element.querySelector('#list').innerHTML = `
-      ${this.state.feeds.map(feed => `<div class="feed">
+      ${feeds.map(feed => `<div class="feed">
           <h5>${feed.headerTitle}</h5>
           <p>${feed.headerDescription}</p>
           <div class="content">
             ${feed.items.map(item => `<div class="item mb-1 mt-1">
-              <button type="button" class="btn-sm btn btn-info" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
+              <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
               <i class="fas fa-info"></i>
               </button>
               <a href="${item.link}">${item.title}</a>
@@ -55,31 +71,33 @@ export default class App {
   }
 
   bind() {
-    $('#exampleModal').on('show.bs.modal', (event) => {
-      const button = $(event.relatedTarget); // Button that triggered the modal
-      const title = button.data('title'); // Extract info from data-* attributes
-      const description = button.data('description'); // Extract info from data-* attributes
+    const exampleModal = $('#exampleModal');
+    const submit = this.element.querySelector('#submit');
+    const input = this.element.querySelector('#input');
+    exampleModal.on('show.bs.modal', (event) => {
+      const button = $(event.relatedTarget);
+      const title = button.data('title');
+      const description = button.data('description');
       const modal = $(event.target);
       modal.find('.modal-title').text(title);
       modal.find('.modal-body').text(description);
     });
-    this.element.querySelector('#submit').addEventListener('click', (e) => {
-      // console.log('click?');
+    submit.addEventListener('click', (e) => {
       e.preventDefault();
-      this.state.url = this.element.querySelector('#input').value;
+      this.state.url = input.value;
       this.fetchStream('start', this.state.url);
     });
-    this.element.querySelector('#input').addEventListener('keypress', (e) => {
+    input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        this.element.querySelector('#submit').focus();
-        this.element.querySelector('#submit').click();
+        submit.focus();
+        submit.click();
       }
     });
   }
 
-  validateRSSUrl() {
-    const isNew = !this.state.links.includes(this.state.url);
-    const isValid = isURL(this.state.url) && isMimeType('text/xml');
+  validateUrl(url) {
+    const isNew = !this.state.links.includes(url);
+    const isValid = isURL(url) && isMimeType('text/xml');
     return isNew && isValid;
   }
 
@@ -93,7 +111,7 @@ export default class App {
     };
     switch (mode) {
       case 'start': {
-        if (this.validateRSSUrl()) {
+        if (this.validateUrl(url)) {
           axios.get(`${cors}${url}`, { headers: { 'Access-Control-Allow-Origin': '*' } })
             .then((response) => {
               // console.log('++++valid');
