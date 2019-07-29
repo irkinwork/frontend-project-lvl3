@@ -15,9 +15,20 @@ export default class App {
     this.state = state;
   }
 
-  render() {
-    this.element.innerHTML = `
-    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  renderSpinner() {
+    const spinner = document.createElement('div');
+    spinner.classList.add('spinner');
+    spinner.innerHTML = `<div class="bg-white fixed-top h-100 w-100 d-flex align-items-center justify-content-center"><div class="spinner-border text-info p-4" role="status">
+    <span class="sr-only">Loading...</span>
+  </div></div>`;
+    this.element.append(spinner);
+  }
+
+  renderModal() {
+    const modal = document.createElement('div');
+    modal.classList.add('modal-wrapper');
+    this.element.prepend(modal);
+    modal.outerHTML = `<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -26,29 +37,45 @@ export default class App {
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <div class="modal-body"></div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Send message</button>
+          <div class="modal-body"></div>
         </div>
       </div>
-    </div>
-  </div>
+    </div>`;
+    const exampleModal = $('#exampleModal');
+    exampleModal.on('show.bs.modal', (event) => {
+      const button = $(event.relatedTarget);
+      const title = button.data('title');
+      const description = button.data('description');
+      const modalTarget = $(event.target);
+      modalTarget.find('.modal-title').text(title);
+      modalTarget.find('.modal-body').text(description);
+    });
+  }
+
+  renderContainer() {
+    const container = document.createElement('div');
+    container.classList.add('container');
+    this.element.append(container);
+    container.outerHTML = `
     <div class="container">
       <div class="jumbotron pb-4 pt-4">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <span class="input-group-text" id="basic-addon1">Insert your RSS link</span>
-          </div>
-          <input type="text" id="input" class="form-control alert ${this.state.isUrlValid ? 'alert-dark' : 'alert-danger'}" placeholder="RSS Link" aria-label="RSS Link" aria-describedby="basic-addon1">
-          <div class="input-group-append">
-            <button class="btn btn-outline-secondary" id="submit" role="button">Get RSS</button>
-          </div>
-        </div>
+        <div class="input-group"></div>
       </div>
       <div id="list"></div>`;
-    this.renderList(this.state.feeds);
-    this.bind();
+  }
+
+  renderInputGroup(valid) {
+    const input = this.element.querySelector('.input-group');
+    input.outerHTML = `<div class="input-group">
+    <div class="input-group-prepend">
+      <span class="input-group-text" id="basic-addon1">Insert your RSS link</span>
+    </div>
+    <input type="text" id="input" class="form-control alert-${ valid ? 'dark' : 'danger'}" placeholder="RSS Link" aria-label="RSS Link" aria-describedby="basic-addon1">
+    <div class="input-group-append">
+      <button class="btn btn-outline-secondary" id="submit" role="button">Get RSS</button>
+    </div>
+  </div>
+</div>`;
   }
 
   renderList(feeds) {
@@ -64,28 +91,19 @@ export default class App {
               <a href="${item.link}">${item.title}</a>
               </div>`).join('')}
           </div>
-          <hr>
-          </div>`).join('')}
-        </div>
-      </div>`;
+        <hr>
+        </div>`).join('')}
+      </div>
+    </div>`;
   }
 
   bind() {
-    const exampleModal = $('#exampleModal');
     const submit = this.element.querySelector('#submit');
     const input = this.element.querySelector('#input');
-    exampleModal.on('show.bs.modal', (event) => {
-      const button = $(event.relatedTarget);
-      const title = button.data('title');
-      const description = button.data('description');
-      const modal = $(event.target);
-      modal.find('.modal-title').text(title);
-      modal.find('.modal-body').text(description);
-    });
     submit.addEventListener('click', (e) => {
       e.preventDefault();
       this.state.url = input.value;
-      this.fetchStream('start', this.state.url);
+      this.validateUrl(this.state.url);
     });
     input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -98,66 +116,38 @@ export default class App {
   validateUrl(url) {
     const isNew = !this.state.links.includes(url);
     const isValid = isURL(url) && isMimeType('text/xml');
-    return isNew && isValid;
-  }
-
-  fetchStream(mode, url) {
-    const parseData = (data) => {
-      const content = parser.parseFromString(data, 'text/xml');
-      this.parseList(content, url, mode);
-      setTimeout(() => {
-        this.fetchStream('update', url);
-      }, 5000);
-    };
-    switch (mode) {
-      case 'start': {
-        if (this.validateUrl(url)) {
-          axios.get(`${cors}${url}`, { headers: { 'Access-Control-Allow-Origin': '*' } })
-            .then((response) => {
-              // console.log('++++valid');
-              if (!this.state.links.includes(url)) {
-                this.state.links.push(url);
-                parseData(response.data);
-                this.state.url = '';
-                this.state.isUrlValid = true;
-              }
-              setTimeout(() => {
-                this.fetchStream('update', url);
-              }, 1000);
-            })
-            .catch(() => {
-              // console.log('----errror');
-              this.state.url = '';
-              this.state.isUrlValid = false;
-              throw new Error('Couldn\'t get RSS feed');
-            });
-        } else {
-          // console.log('----invalid');
-          this.state.url = '';
-          this.state.isUrlValid = false;
-          console.log(this.state);
-        }
-        break;
-      }
-      case 'update': {
-        axios.get(`${cors}${url}`, { headers: { 'Access-Control-Allow-Origin': '*' } })
-          .then((response) => {
-            // console.log('++++update request');
-            parseData(response.data);
-          })
-          .catch(() => {
-            // console.log('----update errror');
-            throw new Error('Couldn\'t update RSS feed');
-          });
-        break;
-      }
-      default: break;
+    if (isNew && isValid) {
+      this.state.mode = 'valid';
+      this.state.links.push(url);
+    } else {
+      this.state.mode = 'invalid';
     }
   }
 
-  parseList(doc, url, mode) {
-    const headerTitle = doc.getElementsByTagName('title')[0].childNodes[0].nodeValue;
-    const headerDescription = doc.getElementsByTagName('description')[0].childNodes[0].nodeValue;
+  fetchRSS(url) {
+    axios.get(`${cors}${url}`)
+      .then((response) => {
+        this.parseData(response.data, url);
+        setTimeout(() => {
+          this.fetchRSS(url);
+        }, 1000);
+      })
+      .catch(() => {
+        throw new Error('Couldn\'t get RSS feed');
+      });
+    this.state.url = '';
+  }
+
+  setState(newState) {
+    this.state = { ...this.state, ...newState };
+  }
+
+  parseData(data, url) {
+    const doc = parser.parseFromString(data, 'text/xml');
+    const headerTitleNodes = doc.getElementsByTagName('title');
+    const headerTitle = headerTitleNodes[0].childNodes[0].nodeValue;
+    const headerDescriptionNodes = doc.getElementsByTagName('description');
+    const headerDescription = headerDescriptionNodes[0].childNodes[0].nodeValue;
     const nodes = doc.getElementsByTagName('item');
     const items = Array.from(nodes)
       .map(node => Array.from(node.childNodes)
@@ -173,35 +163,71 @@ export default class App {
     const feed = {
       headerTitle, headerDescription, url, items,
     };
-    this.updateList(feed, url, mode);
+    this.processFeed(feed, url);
   }
 
-  updateList(feed, url, mode) {
-    switch (mode) {
-      case 'start': {
-        this.state.feeds.push(feed);
-        break;
-      }
-      case 'update': {
-        const currentFeed = this.state.feeds.find(item => item.url === url);
-        const newItems = differenceBy(feed.items, currentFeed.items, 'link');
-        // console.log('feed.items', feed.items);
-        // console.log('currentFeed.items', currentFeed.items);
-        // console.log('...newItems', ...newItems);
-        if (newItems.length > 0) {
-          currentFeed.items.push(...newItems);
-        }
-        break;
-      }
-      default: break;
+  processFeed(feed, url) {
+    const isCurrentUrlProcessed = this.state.feeds.map(item => item.url)
+      .includes(url);
+    if (isCurrentUrlProcessed) {
+      this.updateList(feed, url);
+    } else {
+      this.state.feeds.push(feed);
+    }
+  }
+
+  updateList(feed, url) {
+    const currentFeed = this.state.feeds.find(item => item.url === url);
+    const newItems = differenceBy(feed.items, currentFeed.items, 'link');
+    if (newItems.length > 0) {
+      currentFeed.items.push(...newItems);
     }
   }
 
   init() {
-    this.render();
     watch(this.state, () => {
-      WatchJS.noMore = true;
-      this.render();
+      switch (this.state.mode) {
+        case 'loading': {
+          this.renderSpinner();
+          this.renderContainer();
+          this.renderInputGroup(true);
+          this.renderModal();
+          this.bind();
+          this.state.mode = 'loaded';
+          break;
+        }
+        case 'loaded': {
+          $(document).ready(() => {
+            const spinner = $('.spinner');
+            spinner.hide();
+          });
+          this.state.mode = 'renderList';
+          break;
+        }
+        case 'renderList': {
+          this.state.links.forEach((url) => {
+            this.fetchRSS(url);
+          });
+          this.renderList(this.state.feeds);
+          break;
+        }
+        case 'invalid': {
+          this.state.url = '';
+          this.renderInputGroup(false);
+          this.bind();
+          this.state.mode = 'renderList';
+          break;
+        }
+        case 'valid': {
+          this.state.url = '';
+          this.renderInputGroup(true);
+          this.bind();
+          this.state.mode = 'renderList';
+          break;
+        }
+        default: break;
+      }
     });
+    this.state.mode = 'loading';
   }
 }
