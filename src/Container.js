@@ -35,7 +35,7 @@ export default class Container {
                 <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
                 <i class="fas fa-info"></i>
                 </button>
-                <a href="${item.link}">${item.title}</a>
+                <a href="${item.link}" target="_blank">${item.title}</a>
                 </div>`).join('')}
             </div>
           <hr>
