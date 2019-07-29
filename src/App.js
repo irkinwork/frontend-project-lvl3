@@ -3,6 +3,9 @@ import { isURL, isMimeType } from 'validator';
 import axios from 'axios';
 import { uniqueId, differenceBy } from 'lodash';
 import $ from 'jquery';
+import Modal from './Modal';
+import Spinner from './Spinner';
+import Container from './Container';
 
 const { watch } = WatchJS;
 const cors = 'https://cors-anywhere.herokuapp.com/';
@@ -13,93 +16,17 @@ export default class App {
   constructor(element, state) {
     this.element = element;
     this.state = state;
+    this.modal = new Modal();
+    this.spinner = new Spinner();
+    this.container = new Container();
+    this.element.prepend(this.modal.template);
+    this.element.append(this.spinner.template);
+    this.element.append(this.container.template);
   }
 
-  renderSpinner() {
-    const spinner = document.createElement('div');
-    spinner.classList.add('spinner');
-    spinner.innerHTML = `<div class="bg-white fixed-top h-100 w-100 d-flex align-items-center justify-content-center"><div class="spinner-border text-info p-4" role="status">
-    <span class="sr-only">Loading...</span>
-  </div></div>`;
-    this.element.append(spinner);
-  }
-
-  renderModal() {
-    const modal = document.createElement('div');
-    modal.classList.add('modal-wrapper');
-    this.element.prepend(modal);
-    modal.outerHTML = `<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel"></h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-          <div class="modal-body"></div>
-        </div>
-      </div>
-    </div>`;
-    const exampleModal = $('#exampleModal');
-    exampleModal.on('show.bs.modal', (event) => {
-      const button = $(event.relatedTarget);
-      const title = button.data('title');
-      const description = button.data('description');
-      const modalTarget = $(event.target);
-      modalTarget.find('.modal-title').text(title);
-      modalTarget.find('.modal-body').text(description);
-    });
-  }
-
-  renderContainer() {
-    const container = document.createElement('div');
-    container.classList.add('container');
-    this.element.append(container);
-    container.outerHTML = `
-    <div class="container">
-      <div class="jumbotron pb-4 pt-4">
-        <div class="input-group"></div>
-      </div>
-      <div id="list"></div>`;
-  }
-
-  renderInputGroup(valid) {
-    const input = this.element.querySelector('.input-group');
-    input.outerHTML = `<div class="input-group">
-    <div class="input-group-prepend">
-      <span class="input-group-text" id="basic-addon1">Insert your RSS link</span>
-    </div>
-    <input type="text" id="input" class="form-control alert-${ valid ? 'dark' : 'danger'}" placeholder="RSS Link" aria-label="RSS Link" aria-describedby="basic-addon1">
-    <div class="input-group-append">
-      <button class="btn btn-outline-secondary" id="submit" role="button">Get RSS</button>
-    </div>
-  </div>
-</div>`;
-  }
-
-  renderList(feeds) {
-    this.element.querySelector('#list').innerHTML = `
-      ${feeds.map(feed => `<div class="feed">
-          <h5>${feed.headerTitle}</h5>
-          <p>${feed.headerDescription}</p>
-          <div class="content">
-            ${feed.items.map(item => `<div class="item mb-1 mt-1">
-              <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
-              <i class="fas fa-info"></i>
-              </button>
-              <a href="${item.link}">${item.title}</a>
-              </div>`).join('')}
-          </div>
-        <hr>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }
-
-  bind() {
-    const submit = this.element.querySelector('#submit');
-    const input = this.element.querySelector('#input');
+  addListeners() {
+    const submit = this.container.element.querySelector('#submit');
+    const input = this.container.element.querySelector('#input');
     submit.addEventListener('click', (e) => {
       e.preventDefault();
       this.state.url = input.value;
@@ -136,10 +63,6 @@ export default class App {
         throw new Error('Couldn\'t get RSS feed');
       });
     this.state.url = '';
-  }
-
-  setState(newState) {
-    this.state = { ...this.state, ...newState };
   }
 
   parseData(data, url) {
@@ -188,18 +111,15 @@ export default class App {
     watch(this.state, () => {
       switch (this.state.mode) {
         case 'loading': {
-          this.renderSpinner();
-          this.renderContainer();
-          this.renderInputGroup(true);
-          this.renderModal();
-          this.bind();
+          this.container.renderInputGroup(true);
+          this.addListeners();
+          this.modal.init();
           this.state.mode = 'loaded';
           break;
         }
         case 'loaded': {
           $(document).ready(() => {
-            const spinner = $('.spinner');
-            spinner.hide();
+            this.spinner.hide();
           });
           this.state.mode = 'renderList';
           break;
@@ -208,20 +128,20 @@ export default class App {
           this.state.links.forEach((url) => {
             this.fetchRSS(url);
           });
-          this.renderList(this.state.feeds);
+          this.container.renderList(this.state.feeds);
           break;
         }
         case 'invalid': {
           this.state.url = '';
-          this.renderInputGroup(false);
-          this.bind();
+          this.container.renderInputGroup(false);
+          this.addListeners();
           this.state.mode = 'renderList';
           break;
         }
         case 'valid': {
           this.state.url = '';
-          this.renderInputGroup(true);
-          this.bind();
+          this.container.renderInputGroup(true);
+          this.addListeners();
           this.state.mode = 'renderList';
           break;
         }
