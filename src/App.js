@@ -13,7 +13,6 @@ const parser = new DOMParser();
 
 export default class App {
   state = {
-    url: '',
     links: [],
     feeds: [],
     mode: 'init',
@@ -34,7 +33,6 @@ export default class App {
     const input = this.container.element.querySelector('#input');
     submit.addEventListener('click', (e) => {
       e.preventDefault();
-      this.state.url = input.value;
       this.validateUrl(input.value);
     });
     input.addEventListener('keypress', (e) => {
@@ -68,7 +66,6 @@ export default class App {
       .catch(() => {
         throw new Error('Couldn\'t get RSS feed');
       });
-    this.state.url = '';
   }
 
   parseData(data, url) {
@@ -136,13 +133,11 @@ export default class App {
           break;
         }
         case 'invalid': {
-          this.state.url = '';
           this.container.renderInputGroup(false);
           this.addListeners();
           break;
         }
         case 'valid': {
-          this.state.url = '';
           this.container.renderInputGroup(true);
           this.addListeners();
           break;
