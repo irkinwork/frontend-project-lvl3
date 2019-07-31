@@ -1,21 +1,26 @@
-import WatchJS from 'melanke-watchjs';
+import { watch } from 'melanke-watchjs';
 import { isURL, isMimeType } from 'validator';
 import axios from 'axios';
-import { uniqueId, differenceBy } from 'lodash';
-import $ from 'jquery';
+import { differenceBy } from 'lodash';
+import $ from 'jquery/dist/jquery.slim.min';
 import Modal from './Modal';
 import Spinner from './Spinner';
 import Container from './Container';
 
-const { watch } = WatchJS;
 const cors = 'https://cors-anywhere.herokuapp.com/';
 const fields = ['title', 'link', 'description'];
 const parser = new DOMParser();
 
 export default class App {
-  constructor(element, state) {
+  state = {
+    url: '',
+    links: [],
+    feeds: [],
+    mode: 'init',
+  }
+
+  constructor(element) {
     this.element = element;
-    this.state = state;
     this.modal = new Modal();
     this.spinner = new Spinner();
     this.container = new Container();
@@ -30,7 +35,7 @@ export default class App {
     submit.addEventListener('click', (e) => {
       e.preventDefault();
       this.state.url = input.value;
-      this.validateUrl(this.state.url);
+      this.validateUrl(input.value);
     });
     input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -44,8 +49,9 @@ export default class App {
     const isNew = !this.state.links.includes(url);
     const isValid = isURL(url) && isMimeType('text/xml');
     if (isNew && isValid) {
-      this.state.mode = 'valid';
       this.state.links.push(url);
+      this.fetchRSS(url);
+      this.state.mode = 'valid';
     } else {
       this.state.mode = 'invalid';
     }
@@ -57,7 +63,7 @@ export default class App {
         this.parseData(response.data, url);
         setTimeout(() => {
           this.fetchRSS(url);
-        }, 1000);
+        }, 5000);
       })
       .catch(() => {
         throw new Error('Couldn\'t get RSS feed');
@@ -78,10 +84,9 @@ export default class App {
       .map(item => item
         .reduce((acc, field) => {
           const { nodeName, innerHTML } = field;
-          const guid = uniqueId();
           const regex = new RegExp(/<!\[CDATA.*]]>/g);
           const content = regex.test(innerHTML) ? innerHTML.replace(/<!\[CDATA\[/g, '').replace(/]]>/g, '') : innerHTML;
-          return { ...acc, [nodeName]: content, guid };
+          return { ...acc, [nodeName]: content };
         }, {}));
     const feed = {
       headerTitle, headerDescription, url, items,
@@ -90,13 +95,16 @@ export default class App {
   }
 
   processFeed(feed, url) {
-    const isCurrentUrlProcessed = this.state.feeds.map(item => item.url)
+    const isCurrentUrlProcessed = this.state.feeds
+      .map(item => item.url)
       .includes(url);
     if (isCurrentUrlProcessed) {
       this.updateList(feed, url);
     } else {
       this.state.feeds.push(feed);
     }
+    this.state.mode = 'pending';
+    this.state.mode = 'renderList';
   }
 
   updateList(feed, url) {
@@ -108,7 +116,7 @@ export default class App {
   }
 
   init() {
-    watch(this.state, () => {
+    watch(this.state, 'mode', () => {
       switch (this.state.mode) {
         case 'loading': {
           this.container.renderInputGroup(true);
@@ -121,13 +129,9 @@ export default class App {
           $(document).ready(() => {
             this.spinner.hide();
           });
-          this.state.mode = 'renderList';
           break;
         }
         case 'renderList': {
-          this.state.links.forEach((url) => {
-            this.fetchRSS(url);
-          });
           this.container.renderList(this.state.feeds);
           break;
         }
@@ -135,14 +139,12 @@ export default class App {
           this.state.url = '';
           this.container.renderInputGroup(false);
           this.addListeners();
-          this.state.mode = 'renderList';
           break;
         }
         case 'valid': {
           this.state.url = '';
           this.container.renderInputGroup(true);
           this.addListeners();
-          this.state.mode = 'renderList';
           break;
         }
         default: break;

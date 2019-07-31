@@ -31,9 +31,8 @@ export default class Container {
             <h5>${feed.headerTitle}</h5>
             <p>${feed.headerDescription}</p>
             <div class="content">
-              ${feed.items.map(item => `<div class="item mb-1 mt-1">
-                <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
-                <i class="fas fa-info"></i>
+              ${feed.items.map(item => `<div class="item mb-1 mt-1 d-flex align-items-center">
+                <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info pt-2 pb-2 mr-2" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
                 </button>
                 <a href="${item.link}" target="_blank">${item.title}</a>
                 </div>`).join('')}
