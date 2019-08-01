@@ -6,6 +6,7 @@ export default class Container {
       <div id="example-links" class="alert alert-info w-100">
         Example RSS links (to click and add): 
         <a href="https://ru.hexlet.io/lessons.rss">Hexlet Lessons</a>, 
+        <a href="https://ru.hexlet.io/blog.rss">Hexlet Blog</a>, 
         <a href="http://lorem-rss.herokuapp.com/feed?unit=second&interval=1">Lorem RSS 1 sec</a>,
         <a href="http://lorem-rss.herokuapp.com/feed?unit=minute&interval=1">Lorem RSS 1 min</a>,
         <a href="http://feeds.bbci.co.uk/news/rss.xml">BBC News</a>
