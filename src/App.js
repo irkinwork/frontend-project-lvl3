@@ -117,6 +117,7 @@ export default class App {
       switch (this.state.mode) {
         case 'loading': {
           this.container.renderInputGroup(true);
+          this.container.addListenersToExampleLinks();
           this.addListeners();
           this.modal.init();
           this.state.mode = 'loaded';
