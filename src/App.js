@@ -4,6 +4,7 @@ import { differenceBy } from 'lodash';
 import $ from 'jquery';
 import Container from './Container';
 import { validateUrl, parseData } from './utils';
+import Modal from './Modal';
 
 const cors = 'https://cors-anywhere.herokuapp.com/';
 const fields = ['title', 'link', 'description'];
@@ -18,23 +19,11 @@ export default class App {
   constructor(element) {
     this.element = element;
     this.container = new Container();
-  }
-
-  addListenersToModal() {
-    this.exampleModal = $('#exampleModal');
-    this.exampleModal.on('show.bs.modal', (event) => {
-      const button = $(event.relatedTarget);
-      const title = button.data('title');
-      const description = button.data('description');
-      const modalTarget = $(event.target);
-      modalTarget.find('.modal-title').text(title);
-      modalTarget.find('.modal-body').text(description);
-    });
+    this.modal = new Modal();
   }
 
   addListeners() {
-    const submit = this.container.element.querySelector('#submit');
-    const input = this.container.element.querySelector('#input');
+    const { submit, input } = this.container;
     submit.addEventListener('click', (e) => {
       e.preventDefault();
       const url = input.value;
@@ -64,8 +53,11 @@ export default class App {
           this.fetchRSS(url);
         }, 5000);
       })
-      .catch(() => {
-        throw new Error('Couldn\'t get RSS feed');
+      .catch((e) => {
+        const code = e.response.status;
+        this.modal.element.trigger('error', [code, url]);
+        this.modal.element.modal('show');
+        throw e;
       });
   }
 
@@ -96,10 +88,10 @@ export default class App {
         case 'loading': {
           this.container.addListenersToExampleLinks();
           this.addListeners();
-          this.addListenersToModal();
+          this.modal.addListeners();
           $(document).ready(() => {
-            this.spinner = $('.spinner');
-            this.spinner.hide();
+            const spinner = $('.spinner');
+            spinner.hide();
           });
           break;
         }

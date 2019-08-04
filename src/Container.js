@@ -1,45 +1,48 @@
 export default class Container {
   constructor() {
     this.element = document.querySelector('.container');
+    this.input = this.element.querySelector('#input');
+    this.submit = this.element.querySelector('#submit');
+    this.links = this.element.querySelectorAll('#example-links a');
+    this.list = this.element.querySelector('#list');
   }
 
   addListenersToExampleLinks() {
-    const links = this.element.querySelectorAll('#example-links a');
-    const input = this.element.querySelector('#input');
-    const submit = this.element.querySelector('#submit');
+    const { links, input, submit } = this;
     links.forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const { href } = link;
         input.value = href;
         submit.click();
+        input.value = '';
       });
     });
   }
 
   renderInput(valid) {
-    this.input = this.element.querySelector('#input');
+    const { input } = this;
     if (valid) {
-      this.input.classList.remove('alert-danger');
-      this.input.classList.add('alert-dark');
-      this.input.placeholder = 'Enter RSS link';
+      input.classList.remove('alert-danger');
+      input.classList.add('alert-dark');
+      input.placeholder = 'Enter RSS link';
     } else {
-      this.input.classList.remove('alert-dark');
-      this.input.classList.add('alert-danger');
-      this.input.placeholder = 'Invalid link';
+      input.classList.remove('alert-dark');
+      input.classList.add('alert-danger');
+      input.placeholder = 'Invalid link';
     }
-    this.input.value = '';
+    input.value = '';
   }
 
   renderList(feeds) {
-    this.element.querySelector('#list').innerHTML = `
+    this.list.innerHTML = `
       ${feeds.map(feed => `
         <div class="feed">
             <h5>${feed.headerTitle}</h5>
             <p>${feed.headerDescription}</p>
             <div class="content">
               ${feed.items.map(item => `<div class="item mb-1 mt-1 d-flex align-items-center">
-                <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info pt-2 pb-2 mr-2" data-toggle="modal" data-target="#exampleModal" data-description="${item.description}" data-title="${item.title}">
+                <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info pt-2 pb-2 mr-2" data-toggle="modal" data-target="#infoModal" data-description="${item.description}" data-title="${item.title}">
                 </button>
                 <a href="${item.link}" target="_blank">${item.title}</a>
                 </div>`).join('')}
