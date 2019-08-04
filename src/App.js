@@ -54,8 +54,8 @@ export default class App {
         }, 5000);
       })
       .catch((e) => {
-        const code = e.response.status;
-        this.modal.element.trigger('error', [code, url]);
+        const { status, statusText } = e.response;
+        this.modal.element.trigger('error', [`${status} ${statusText}`, url]);
         this.modal.element.modal('show');
         throw e;
       });

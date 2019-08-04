@@ -14,9 +14,9 @@ export default class Modal {
       modalTarget.find('.modal-title').text(title);
       modalTarget.find('.modal-body').text(description);
     });
-    this.element.on('error', (event, code, url) => {
+    this.element.on('error', (event, status, url) => {
       const modalTarget = $(event.target);
-      modalTarget.find('.modal-title').text(`${code} Error`);
+      modalTarget.find('.modal-title').text(status);
       modalTarget.find('.modal-body').text(`Couldn't get RSS feed: ${url}`);
     });
   }
