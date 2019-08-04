@@ -1,15 +1,12 @@
 import { watch } from 'melanke-watchjs';
-import { isURL, isMimeType } from 'validator';
 import axios from 'axios';
 import { differenceBy } from 'lodash';
-import $ from 'jquery/dist/jquery.slim.min';
-import Modal from './Modal';
-import Spinner from './Spinner';
+import $ from 'jquery';
 import Container from './Container';
+import { validateUrl, parseData } from './utils';
 
 const cors = 'https://cors-anywhere.herokuapp.com/';
 const fields = ['title', 'link', 'description'];
-const parser = new DOMParser();
 
 export default class App {
   state = {
@@ -20,12 +17,19 @@ export default class App {
 
   constructor(element) {
     this.element = element;
-    this.modal = new Modal();
-    this.spinner = new Spinner();
     this.container = new Container();
-    this.element.prepend(this.modal.template);
-    this.element.append(this.spinner.template);
-    this.element.append(this.container.template);
+  }
+
+  addListenersToModal() {
+    this.exampleModal = $('#exampleModal');
+    this.exampleModal.on('show.bs.modal', (event) => {
+      const button = $(event.relatedTarget);
+      const title = button.data('title');
+      const description = button.data('description');
+      const modalTarget = $(event.target);
+      modalTarget.find('.modal-title').text(title);
+      modalTarget.find('.modal-body').text(description);
+    });
   }
 
   addListeners() {
@@ -33,7 +37,15 @@ export default class App {
     const input = this.container.element.querySelector('#input');
     submit.addEventListener('click', (e) => {
       e.preventDefault();
-      this.validateUrl(input.value);
+      const url = input.value;
+      const isValid = validateUrl(this.state.links, url);
+      if (isValid) {
+        this.state.links.push(url);
+        this.fetchRSS(url);
+        this.state.mode = 'valid';
+      } else {
+        this.state.mode = 'invalid';
+      }
     });
     input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -43,22 +55,11 @@ export default class App {
     });
   }
 
-  validateUrl(url) {
-    const isNew = !this.state.links.includes(url);
-    const isValid = isURL(url) && isMimeType('text/xml');
-    if (isNew && isValid) {
-      this.state.links.push(url);
-      this.fetchRSS(url);
-      this.state.mode = 'valid';
-    } else {
-      this.state.mode = 'invalid';
-    }
-  }
-
   fetchRSS(url) {
     axios.get(`${cors}${url}`)
       .then((response) => {
-        this.parseData(response.data, url);
+        const feed = parseData(response.data, url, fields);
+        this.processFeed(feed, url);
         setTimeout(() => {
           this.fetchRSS(url);
         }, 5000);
@@ -66,29 +67,6 @@ export default class App {
       .catch(() => {
         throw new Error('Couldn\'t get RSS feed');
       });
-  }
-
-  parseData(data, url) {
-    const doc = parser.parseFromString(data, 'text/xml');
-    const headerTitleNodes = doc.getElementsByTagName('title');
-    const headerTitle = headerTitleNodes[0].childNodes[0].nodeValue;
-    const headerDescriptionNodes = doc.getElementsByTagName('description');
-    const headerDescription = headerDescriptionNodes[0].childNodes[0].nodeValue;
-    const nodes = doc.getElementsByTagName('item');
-    const items = Array.from(nodes)
-      .map(node => Array.from(node.childNodes)
-        .filter(field => fields.includes(field.nodeName)))
-      .map(item => item
-        .reduce((acc, field) => {
-          const { nodeName, innerHTML } = field;
-          const regex = new RegExp(/<!\[CDATA.*]]>/g);
-          const content = regex.test(innerHTML) ? innerHTML.replace(/<!\[CDATA\[/g, '').replace(/]]>/g, '') : innerHTML;
-          return { ...acc, [nodeName]: content };
-        }, {}));
-    const feed = {
-      headerTitle, headerDescription, url, items,
-    };
-    this.processFeed(feed, url);
   }
 
   processFeed(feed, url) {
@@ -116,15 +94,11 @@ export default class App {
     watch(this.state, 'mode', () => {
       switch (this.state.mode) {
         case 'loading': {
-          this.container.renderInputGroup(true);
           this.container.addListenersToExampleLinks();
           this.addListeners();
-          this.modal.init();
-          this.state.mode = 'loaded';
-          break;
-        }
-        case 'loaded': {
+          this.addListenersToModal();
           $(document).ready(() => {
+            this.spinner = $('.spinner');
             this.spinner.hide();
           });
           break;
@@ -134,13 +108,11 @@ export default class App {
           break;
         }
         case 'invalid': {
-          this.container.renderInputGroup(false);
-          this.addListeners();
+          this.container.renderInput(false);
           break;
         }
         case 'valid': {
-          this.container.renderInputGroup(true);
-          this.addListeners();
+          this.container.renderInput(true);
           break;
         }
         default: break;

@@ -9,7 +9,14 @@ install-deps:
 build:
 	rm -rf dist
 	NODE_ENV=production npx webpack
+
+deploy:
 	cd dist && echo weary-fan.surge.sh > CNAME && surge
+
+prod:
+	make build
+	make deploy
+
 lint:
 	npx eslint .
 

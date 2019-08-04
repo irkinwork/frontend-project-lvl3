@@ -1,22 +1,6 @@
 export default class Container {
-  get template() {
-    this.element = document.createElement('div');
-    this.element.classList.add('container');
-    this.element.innerHTML = `
-      <div id="example-links" class="alert alert-info w-100">
-        Example RSS links (to click and add): 
-        <a href="https://ru.hexlet.io/lessons.rss">Hexlet Lessons</a>, 
-        <a href="https://ru.hexlet.io/blog.rss">Hexlet Blog</a>, 
-        <a href="http://lorem-rss.herokuapp.com/feed?unit=second&interval=1">Lorem RSS 1 sec</a>,
-        <a href="http://lorem-rss.herokuapp.com/feed?unit=minute&interval=1">Lorem RSS 1 min</a>,
-        <a href="http://feeds.bbci.co.uk/news/rss.xml">BBC News</a>
-      </div>
-      <div class="jumbotron pb-4 pt-4">
-        <div class="input-group"></div>
-      </div>
-      <div id="list"></div>
-      `;
-    return this.element;
+  constructor() {
+    this.element = document.querySelector('.container');
   }
 
   addListenersToExampleLinks() {
@@ -33,18 +17,18 @@ export default class Container {
     });
   }
 
-  renderInputGroup(valid) {
-    this.input = this.element.querySelector('.input-group');
-    this.input.outerHTML = `
-      <div class="input-group">
-        <div class="input-group-prepend">
-          <span class="input-group-text" id="basic-addon1">Insert your RSS link</span>
-        </div>
-        <input type="text" id="input" class="form-control alert-${valid ? 'dark' : 'danger'}" placeholder="${valid ? 'Enter RSS link' : 'Invalid link'}" aria-label="RSS Link" aria-describedby="basic-addon1">
-        <div class="input-group-append">
-          <button class="btn btn-outline-secondary" id="submit" role="button">Get RSS</button>
-        </div>
-      </div>`;
+  renderInput(valid) {
+    this.input = this.element.querySelector('#input');
+    if (valid) {
+      this.input.classList.remove('alert-danger');
+      this.input.classList.add('alert-dark');
+      this.input.placeholder = 'Enter RSS link';
+    } else {
+      this.input.classList.remove('alert-dark');
+      this.input.classList.add('alert-danger');
+      this.input.placeholder = 'Invalid link';
+    }
+    this.input.value = '';
   }
 
   renderList(feeds) {

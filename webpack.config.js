@@ -1,4 +1,6 @@
+const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
 const path = require('path');
 const autoprefixer = require('autoprefixer');
 
@@ -40,9 +42,16 @@ module.exports = {
     port: 9000,
     hot: true,
   },
+  output: process.env.NODE_ENV === 'production' ? {
+    publicPath: './',
+  } : {},
   plugins: [
+    new CopyPlugin([
+      { from: 'node_modules/bootstrap/dist/css/bootstrap.min.css', to: 'css/bootstrap.min.css' },
+    ]),
     new HtmlWebpackPlugin({
       template: 'template.html',
     }),
+    new HtmlWebpackTagsPlugin({ links: ['css/bootstrap.min.css'], append: false }),
   ],
 };
