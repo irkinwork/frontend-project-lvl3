@@ -3,7 +3,7 @@ import axios from 'axios';
 import { differenceBy } from 'lodash';
 import $ from 'jquery';
 import Container from './Container';
-import { validateUrl, parseData } from './utils';
+import { validateUrl, processData } from './utils';
 import Modal from './Modal';
 
 const cors = 'https://cors-anywhere.herokuapp.com/';
@@ -23,8 +23,8 @@ export default class App {
   }
 
   addListeners() {
-    const { submit, input } = this.container;
-    submit.addEventListener('click', (e) => {
+    const { form, input, submit } = this.container;
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = input.value;
       const isValid = validateUrl(this.state.links, url);
@@ -47,7 +47,7 @@ export default class App {
   fetchRSS(url) {
     axios.get(`${cors}${url}`)
       .then((response) => {
-        const feed = parseData(response.data, url, fields);
+        const feed = processData(response.data, url, fields);
         this.processFeed(feed, url);
         setTimeout(() => {
           this.fetchRSS(url);

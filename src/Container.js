@@ -3,6 +3,7 @@ export default class Container {
     this.element = document.querySelector('.container');
     this.input = this.element.querySelector('#input');
     this.submit = this.element.querySelector('#submit');
+    this.form = this.element.querySelector('#form');
     this.links = this.element.querySelectorAll('#example-links a');
     this.list = this.element.querySelector('#list');
   }
