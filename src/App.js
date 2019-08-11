@@ -1,115 +1,148 @@
-import { watch } from 'melanke-watchjs';
-import axios from 'axios';
-import { differenceBy } from 'lodash';
 import $ from 'jquery';
-import Container from './Container';
-import { validateUrl, processData } from './utils';
-import Modal from './Modal';
+import { watch } from 'melanke-watchjs';
+import { differenceBy } from 'lodash';
+import { validateUrl, processData, fetchRSS } from './utils';
+import { renderList, renderInput, renderModal } from './renderers';
 
-const cors = 'https://cors-anywhere.herokuapp.com/';
+const store = {
+  state: 'init',
+  links: [],
+  feeds: [],
+  modalTitle: '',
+  modalDescription: '',
+  currentUrl: '',
+};
 const fields = ['title', 'link', 'description'];
 
-export default class App {
-  state = {
-    links: [],
-    feeds: [],
-    mode: 'init',
+// state mutation
+const updateList = (feed, url) => {
+  const currentFeed = store.feeds.find(item => item.url === url);
+  const newItems = differenceBy(feed.items, currentFeed.items, 'link');
+  if (newItems.length > 0) {
+    currentFeed.items.push(...newItems);
   }
+};
 
-  constructor(element) {
-    this.element = element;
-    this.container = new Container();
-    this.modal = new Modal();
+// state mutation
+const processFeed = (feed, url) => {
+  const isCurrentUrlProcessed = store.feeds
+    .map(item => item.url)
+    .includes(url);
+  if (isCurrentUrlProcessed) {
+    updateList(feed, url);
+  } else {
+    store.feeds.push(feed);
   }
+};
 
-  addListeners() {
-    const { form, input, submit } = this.container;
-    form.addEventListener('submit', (e) => {
+export default (element) => {
+  const container = element.querySelector('.container');
+  const modal = $('#infoModal');
+  const input = container.querySelector('#input');
+  const submit = container.querySelector('#submit');
+  const form = container.querySelector('#form');
+  const exampleLinks = container.querySelectorAll('#example-links a');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    store.currentUrl = input.value;
+    const url = input.value;
+    const fetchCb = (data) => {
+      const feed = processData(data, url, fields);
+      processFeed(feed, url);
+      store.state = 'pending';
+      store.state = 'renderList';
+    };
+    const errCb = (err) => {
+      const { status, statusText } = err.response;
+      store.modalTitle = `${status} ${statusText}`;
+      store.modalDescription = `Couldn't get RSS feed: ${url}`;
+      store.state = 'pending';
+      store.state = 'renderErrorModal';
+      throw err;
+    };
+    const isValid = validateUrl(store.links, url);
+    if (isValid) {
+      store.links.push(url);
+      store.state = 'valid';
+      fetchRSS(url, fetchCb, errCb);
+    } else {
+      store.state = 'invalid';
+    }
+  });
+  // listeners
+  exampleLinks.forEach((link) => {
+    link.addEventListener('click', (e) => {
       e.preventDefault();
-      const url = input.value;
-      const isValid = validateUrl(this.state.links, url);
-      if (isValid) {
-        this.state.links.push(url);
-        this.fetchRSS(url);
-        this.state.mode = 'valid';
-      } else {
-        this.state.mode = 'invalid';
-      }
+      const { href } = link;
+      store.currentUrl = href;
+      store.state = 'pending';
+      store.state = 'exampleLinksClick';
     });
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+  });
+  // listeners
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      store.state = 'pending';
+      store.state = 'enterPress';
+    }
+  });
+  // listeners
+  modal.on('show.bs.modal', (event) => {
+    const button = $(event.relatedTarget);
+    const title = button.data('title');
+    const description = button.data('description');
+    store.modalTitle = title;
+    store.modalDescription = description;
+    store.state = 'pending';
+    store.state = 'renderInfoModal';
+  });
+  // listeners
+
+  watch(store, 'state', () => {
+    const { modalTitle, modalDescription, feeds } = store;
+    switch (store.state) {
+      case 'loading': {
+        $(document).ready(() => {
+          const spinner = $('.spinner');
+          spinner.hide();
+        });
+        break;
+      }
+      case 'renderInfoModal': {
+        renderModal(modal, modalTitle, modalDescription);
+        break;
+      }
+      case 'renderErrorModal': {
+        modal.trigger('error');
+        modal.modal('show');
+        renderModal(modal, modalTitle, modalDescription);
+        break;
+      }
+      case 'renderList': {
+        renderList(feeds, '#list', container);
+        break;
+      }
+      case 'invalid': {
+        renderInput(false, '#input', container);
+        break;
+      }
+      case 'valid': {
+        renderInput(true, '#input', container);
+        break;
+      }
+      case 'exampleLinksClick': {
+        input.value = store.currentUrl;
+        submit.click();
+        break;
+      }
+      case 'enterPress': {
         submit.focus();
         submit.click();
+        break;
       }
-    });
-  }
-
-  fetchRSS(url) {
-    axios.get(`${cors}${url}`)
-      .then((response) => {
-        const feed = processData(response.data, url, fields);
-        this.processFeed(feed, url);
-        setTimeout(() => {
-          this.fetchRSS(url);
-        }, 5000);
-      })
-      .catch((e) => {
-        const { status, statusText } = e.response;
-        this.modal.element.trigger('error', [`${status} ${statusText}`, url]);
-        this.modal.element.modal('show');
-        throw e;
-      });
-  }
-
-  processFeed(feed, url) {
-    const isCurrentUrlProcessed = this.state.feeds
-      .map(item => item.url)
-      .includes(url);
-    if (isCurrentUrlProcessed) {
-      this.updateList(feed, url);
-    } else {
-      this.state.feeds.push(feed);
+      default: break;
     }
-    this.state.mode = 'pending';
-    this.state.mode = 'renderList';
-  }
-
-  updateList(feed, url) {
-    const currentFeed = this.state.feeds.find(item => item.url === url);
-    const newItems = differenceBy(feed.items, currentFeed.items, 'link');
-    if (newItems.length > 0) {
-      currentFeed.items.push(...newItems);
-    }
-  }
-
-  init() {
-    watch(this.state, 'mode', () => {
-      switch (this.state.mode) {
-        case 'loading': {
-          this.container.addListenersToExampleLinks();
-          this.addListeners();
-          this.modal.addListeners();
-          $(document).ready(() => {
-            const spinner = $('.spinner');
-            spinner.hide();
-          });
-          break;
-        }
-        case 'renderList': {
-          this.container.renderList(this.state.feeds);
-          break;
-        }
-        case 'invalid': {
-          this.container.renderInput(false);
-          break;
-        }
-        case 'valid': {
-          this.container.renderInput(true);
-          break;
-        }
-        default: break;
-      }
-    });
-    this.state.mode = 'loading';
-  }
-}
+  });
+  store.state = 'loading';
+};
