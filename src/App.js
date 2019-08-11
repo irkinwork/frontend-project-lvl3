@@ -14,7 +14,6 @@ const store = {
 };
 const fields = ['title', 'link', 'description'];
 
-// state mutation
 const updateList = (feed, url) => {
   const currentFeed = store.feeds.find(item => item.url === url);
   const newItems = differenceBy(feed.items, currentFeed.items, 'link');
@@ -23,7 +22,6 @@ const updateList = (feed, url) => {
   }
 };
 
-// state mutation
 const processFeed = (feed, url) => {
   const isCurrentUrlProcessed = store.feeds
     .map(item => item.url)
@@ -45,7 +43,6 @@ export default (element) => {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    store.currentUrl = input.value;
     const url = input.value;
     const fetchCb = (data) => {
       const feed = processData(data, url, fields);
@@ -70,7 +67,6 @@ export default (element) => {
       store.state = 'invalid';
     }
   });
-  // listeners
   exampleLinks.forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
@@ -80,14 +76,12 @@ export default (element) => {
       store.state = 'exampleLinksClick';
     });
   });
-  // listeners
   input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       store.state = 'pending';
       store.state = 'enterPress';
     }
   });
-  // listeners
   modal.on('show.bs.modal', (event) => {
     const button = $(event.relatedTarget);
     const title = button.data('title');
@@ -97,8 +91,6 @@ export default (element) => {
     store.state = 'pending';
     store.state = 'renderInfoModal';
   });
-  // listeners
-
   watch(store, 'state', () => {
     const { modalTitle, modalDescription, feeds } = store;
     switch (store.state) {
