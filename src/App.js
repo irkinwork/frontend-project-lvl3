@@ -1,37 +1,11 @@
 import $ from 'jquery';
 import { watch } from 'melanke-watchjs';
+import axios from 'axios';
 import { differenceBy } from 'lodash';
-import { validateUrl, processData, fetchRSS } from './utils';
+import { validateUrl, processData } from './utils';
 import { renderList, renderInput, renderModal } from './renderers';
 
-const store = {
-  state: 'init',
-  links: [],
-  feeds: [],
-  modalTitle: '',
-  modalDescription: '',
-  currentUrl: '',
-};
-const fields = ['title', 'link', 'description'];
-
-const updateList = (feed, url) => {
-  const currentFeed = store.feeds.find(item => item.url === url);
-  const newItems = differenceBy(feed.items, currentFeed.items, 'link');
-  if (newItems.length > 0) {
-    currentFeed.items.push(...newItems);
-  }
-};
-
-const processFeed = (feed, url) => {
-  const isCurrentUrlProcessed = store.feeds
-    .map(item => item.url)
-    .includes(url);
-  if (isCurrentUrlProcessed) {
-    updateList(feed, url);
-  } else {
-    store.feeds.push(feed);
-  }
-};
+const cors = 'https://cors-anywhere.herokuapp.com/';
 
 export default (element) => {
   const container = element.querySelector('.container');
@@ -41,28 +15,62 @@ export default (element) => {
   const form = container.querySelector('#form');
   const exampleLinks = container.querySelectorAll('#example-links a');
 
+  const store = {
+    state: 'init',
+    links: [],
+    feeds: [],
+    modalTitle: '',
+    modalDescription: '',
+    currentUrl: '',
+  };
+  const fields = ['title', 'link', 'description'];
+
+  const updateList = (feed, url) => {
+    const currentFeed = store.feeds.find(item => item.url === url);
+    const newItems = differenceBy(feed.items, currentFeed.items, 'link');
+    if (newItems.length > 0) {
+      currentFeed.items.push(...newItems);
+    }
+  };
+
+  const processFeed = (feed, url) => {
+    const isCurrentUrlProcessed = store.feeds
+      .map(item => item.url)
+      .includes(url);
+    if (isCurrentUrlProcessed) {
+      updateList(feed, url);
+    } else {
+      store.feeds.push(feed);
+    }
+    store.state = 'renderList';
+  };
+
+  const fetchRSS = (url) => {
+    axios.get(`${cors}${url}`)
+      .then((response) => {
+        const feed = processData(response.data, url, fields);
+        processFeed(feed, url);
+        setTimeout(() => {
+          fetchRSS(url);
+        }, 5000);
+      })
+      .catch((err) => {
+        const { status, statusText } = err.response;
+        store.modalTitle = `${status} ${statusText}`;
+        store.modalDescription = `Couldn't get RSS feed: ${url}`;
+        store.state = 'renderErrorModal';
+        throw err;
+      });
+  };
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = input.value;
-    const fetchCb = (data) => {
-      const feed = processData(data, url, fields);
-      processFeed(feed, url);
-      store.state = 'pending';
-      store.state = 'renderList';
-    };
-    const errCb = (err) => {
-      const { status, statusText } = err.response;
-      store.modalTitle = `${status} ${statusText}`;
-      store.modalDescription = `Couldn't get RSS feed: ${url}`;
-      store.state = 'pending';
-      store.state = 'renderErrorModal';
-      throw err;
-    };
     const isValid = validateUrl(store.links, url);
     if (isValid) {
       store.links.push(url);
       store.state = 'valid';
-      fetchRSS(url, fetchCb, errCb);
+      fetchRSS(url);
     } else {
       store.state = 'invalid';
     }
@@ -72,15 +80,8 @@ export default (element) => {
       e.preventDefault();
       const { href } = link;
       store.currentUrl = href;
-      store.state = 'pending';
       store.state = 'exampleLinksClick';
     });
-  });
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      store.state = 'pending';
-      store.state = 'enterPress';
-    }
   });
   modal.on('show.bs.modal', (event) => {
     const button = $(event.relatedTarget);
@@ -88,10 +89,9 @@ export default (element) => {
     const description = button.data('description');
     store.modalTitle = title;
     store.modalDescription = description;
-    store.state = 'pending';
     store.state = 'renderInfoModal';
   });
-  watch(store, 'state', () => {
+  watch(store, () => {
     const { modalTitle, modalDescription, feeds } = store;
     switch (store.state) {
       case 'loading': {
@@ -125,11 +125,6 @@ export default (element) => {
       }
       case 'exampleLinksClick': {
         input.value = store.currentUrl;
-        submit.click();
-        break;
-      }
-      case 'enterPress': {
-        submit.focus();
         submit.click();
         break;
       }

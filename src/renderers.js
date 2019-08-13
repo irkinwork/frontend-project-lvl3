@@ -33,6 +33,8 @@ export const renderInput = (valid, inputId, doc) => {
 };
 
 export const renderModal = (target, title, description) => {
-  target.find('.modal-title').text(title);
-  target.find('.modal-body').text(description);
+  const titleElement = target.find('.modal-title');
+  const descriptionElement = target.find('.modal-body');
+  titleElement.text(title);
+  descriptionElement.text(description);
 };
