@@ -1,6 +1,7 @@
 import '@babel/polyfill';
 import 'bootstrap/js/dist/modal';
-import init from './App';
+import 'bootstrap/js/dist/alert';
+import init from './app';
 
 export default () => {
   const element = document.getElementById('point');

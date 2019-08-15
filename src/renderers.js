@@ -38,3 +38,10 @@ export const renderModal = (target, title, description) => {
   titleElement.text(title);
   descriptionElement.text(description);
 };
+
+export const renderAlert = (target, title, url) => {
+  const titleElement = target.find('.alert-title');
+  const descriptionElement = target.find('.alert-body');
+  titleElement.text(title);
+  descriptionElement.html(`Couldn't get a RSS feed: <a target="_blank" href="${url}">${url}</a>`);
+};

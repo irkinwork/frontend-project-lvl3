@@ -51,6 +51,7 @@ module.exports = {
     ]),
     new HtmlWebpackPlugin({
       template: 'template.html',
+      favicon: './favicon.ico',
     }),
     new HtmlWebpackTagsPlugin({ links: ['css/bootstrap.min.css'], append: false }),
   ],

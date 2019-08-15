@@ -2,70 +2,84 @@ import $ from 'jquery';
 import { watch } from 'melanke-watchjs';
 import axios from 'axios';
 import { differenceBy } from 'lodash';
-import { validateUrl, processData } from './utils';
-import { renderList, renderInput, renderModal } from './renderers';
+import { validateUrl, parseData } from './utils';
+import {
+  renderList, renderInput, renderModal, renderAlert,
+} from './renderers';
 
 const cors = 'https://cors-anywhere.herokuapp.com/';
 
 export default (element) => {
   const container = element.querySelector('.container');
   const modal = $('#infoModal');
+  const alert = $('#alert');
   const input = container.querySelector('#input');
   const submit = container.querySelector('#submit');
   const form = container.querySelector('#form');
   const exampleLinks = container.querySelectorAll('#example-links a');
 
   const store = {
-    state: 'init',
-    links: [],
-    feeds: [],
-    modalTitle: '',
-    modalDescription: '',
+    state: '',
     currentUrl: '',
+    links: [],
   };
+
+  const feedList = [];
+
+  const modalStore = {
+    title: '',
+    description: '',
+  };
+
+  const alertStore = {
+    state: '',
+    title: '',
+    url: '',
+  };
+
   const fields = ['title', 'link', 'description'];
 
-  const updateList = (feed, url) => {
-    const currentFeed = store.feeds.find(item => item.url === url);
+  const addFeed = (feed, url) => {
+    const currentFeed = feedList.find(item => item.url === url);
     const newItems = differenceBy(feed.items, currentFeed.items, 'link');
     if (newItems.length > 0) {
       currentFeed.items.push(...newItems);
     }
   };
 
-  const processFeed = (feed, url) => {
-    const isCurrentUrlProcessed = store.feeds
+  const updateList = (feed, url) => {
+    const isCurrentUrlProcessed = feedList
       .map(item => item.url)
       .includes(url);
     if (isCurrentUrlProcessed) {
-      updateList(feed, url);
+      addFeed(feed, url);
     } else {
-      store.feeds.push(feed);
+      feedList.push(feed);
     }
-    store.state = 'renderList';
   };
 
   const fetchRSS = (url) => {
     axios.get(`${cors}${url}`)
       .then((response) => {
-        const feed = processData(response.data, url, fields);
-        processFeed(feed, url);
+        const feed = parseData(response.data, url, fields);
+        updateList(feed, url);
         setTimeout(() => {
           fetchRSS(url);
         }, 5000);
       })
       .catch((err) => {
         const { status, statusText } = err.response;
-        store.modalTitle = `${status} ${statusText}`;
-        store.modalDescription = `Couldn't get RSS feed: ${url}`;
-        store.state = 'renderErrorModal';
+        alertStore.title = `${status} ${statusText}`;
+        alertStore.url = url;
+        alertStore.state = 'on';
         throw err;
       });
   };
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const url = input.value;
+    const url = e.srcElement[0].value;
+    store.currentUrl = url;
     const isValid = validateUrl(store.links, url);
     if (isValid) {
       store.links.push(url);
@@ -87,32 +101,21 @@ export default (element) => {
     const button = $(event.relatedTarget);
     const title = button.data('title');
     const description = button.data('description');
-    store.modalTitle = title;
-    store.modalDescription = description;
-    store.state = 'renderInfoModal';
+    modalStore.title = title;
+    modalStore.description = description;
+  });
+  alert.on('close.bs.alert', (e) => {
+    e.preventDefault();
+    alertStore.state = 'off';
+  });
+  $(document).ready(() => {
+    store.state = 'loading';
   });
   watch(store, () => {
-    const { modalTitle, modalDescription, feeds } = store;
     switch (store.state) {
       case 'loading': {
-        $(document).ready(() => {
-          const spinner = $('.spinner');
-          spinner.hide();
-        });
-        break;
-      }
-      case 'renderInfoModal': {
-        renderModal(modal, modalTitle, modalDescription);
-        break;
-      }
-      case 'renderErrorModal': {
-        modal.trigger('error');
-        modal.modal('show');
-        renderModal(modal, modalTitle, modalDescription);
-        break;
-      }
-      case 'renderList': {
-        renderList(feeds, '#list', container);
+        const spinner = $('.spinner');
+        spinner.hide();
         break;
       }
       case 'invalid': {
@@ -131,5 +134,28 @@ export default (element) => {
       default: break;
     }
   });
-  store.state = 'loading';
+  watch(feedList, () => {
+    renderList(feedList, '#list', container);
+  });
+
+  watch(modalStore, () => {
+    const { title, description } = modalStore;
+    renderModal(modal, title, description);
+  });
+
+  watch(alertStore, () => {
+    const { title, url, state } = alertStore;
+    switch (state) {
+      case 'on': {
+        renderAlert(alert, title, url);
+        alert.removeClass('d-none');
+        break;
+      }
+      case 'off': {
+        alert.addClass('d-none');
+        break;
+      }
+      default: break;
+    }
+  });
 };

@@ -13,14 +13,14 @@ const cleanCdata = (value) => {
   return regex.test(value) ? value.replace(/<!\[CDATA\[/g, '').replace(/]]>/g, '') : value;
 };
 
-export const processData = (data, url, fields) => {
+export const parseData = (data, url, fields) => {
   const doc = parser.parseFromString(data, 'text/xml');
-  const headerTitle = doc.getElementsByTagName('title')[0].innerHTML;
-  const headerDescription = doc.getElementsByTagName('description')[0].innerHTML;
-  const htmlColl = doc.getElementsByTagName('item');
+  const headerTitle = doc.querySelector('title').innerHTML;
+  const headerDescription = doc.querySelector('description').innerHTML;
+  const htmlColl = doc.querySelectorAll('item');
   const items = Array.from(htmlColl).map(node => fields
     .reduce((acc, field) => {
-      const value = node.getElementsByTagName(field)[0].innerHTML;
+      const value = node.querySelector(field).innerHTML;
       return { ...acc, [field]: cleanCdata(value) };
     }, {}));
   return {
