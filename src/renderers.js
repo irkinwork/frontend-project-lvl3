@@ -39,9 +39,15 @@ export const renderModal = (target, title, description) => {
   descriptionElement.text(description);
 };
 
-export const renderAlert = (target, title, url) => {
-  const titleElement = target.find('.alert-title');
-  const urlElement = target.find('.alert-url');
-  titleElement.text(title);
-  urlElement.text(url).attr('href', url);
+export const renderAlert = (element, title, url) => {
+  const alert = document.createElement('div');
+  element.prepend(alert);
+  alert.outerHTML = `
+  <div id="alert" class="mt-0 w-100 alert alert-danger alert-dismissible fade show" role="alert">
+    <h4 class="alert-title">${title}</h4>
+    <div class="alert-body">Couldn't get a RSS feed: <a target="_blank" class="alert-url" href="${url}">${url}</a></div>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+</div>`;
 };

@@ -11,28 +11,23 @@ module.exports = {
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-        },
+        use: [
+          { loader: 'babel-loader' },
+          { loader: 'eslint-loader', options: { emitWarning: true } },
+        ],
       },
       {
         test: /\.(css|scss)$/,
         use: [
-          {
-            loader: 'style-loader', // inject CSS to page
-          },
-          {
-            loader: 'css-loader', // translates CSS into CommonJS modules
-          },
+          { loader: 'style-loader' },
+          { loader: 'css-loader' },
           {
             loader: 'postcss-loader', // Run post css actions
             options: {
               plugins: () => [autoprefixer],
             },
           },
-          {
-            loader: 'sass-loader',
-          },
+          { loader: 'sass-loader' },
         ],
       },
     ],

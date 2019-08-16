@@ -7,13 +7,6 @@
 
 <body>
   <div id="point">
-    <div id="alert" class="alert alert-danger alert-dismissible fade show d-none" role="alert">
-      <h4 class="alert-title"></h4>
-      <div class="alert-body">Couldn't get a RSS feed: <a target="_blank" class="alert-url" href=""></a></div>
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
     <div class="spinner">
       <div class="bg-white fixed-top h-100 w-100 d-flex align-items-center justify-content-center">
         <div class="spinner-border text-info p-4" role="status">
@@ -37,12 +30,13 @@
     </div>
     <div class="container">
       <div id="example-links" class="alert alert-info w-100">
-        Example RSS links (to click and add):
+        Example RSS links:
         <a href="https://ru.hexlet.io/lessons.rss">Hexlet Lessons</a>,
         <a href="https://ru.hexlet.io/blog.rss">Hexlet Blog</a>,
         <a href="http://lorem-rss.herokuapp.com/feed?unit=second&interval=1">Lorem RSS 1 sec</a>,
         <a href="http://lorem-rss.herokuapp.com/feed?unit=minute&interval=1">Lorem RSS 1 min</a>,
         <a href="http://lorem-rss.herokuapp.com/feed?unit=minute&interval=7">Invalid Lorem RSS</a>,
+        <a href="http://lorem-rss.herokuapp.com/feed?unit=minute&interval=70">Second Invalid Lorem RSS</a>,
         <a href="http://feeds.bbci.co.uk/news/rss.xml">BBC News</a>
       </div>
       <form id="form" class="jumbotron pb-4 pt-4">

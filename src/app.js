@@ -12,7 +12,6 @@ const cors = 'https://cors-anywhere.herokuapp.com/';
 export default (element) => {
   const container = element.querySelector('.container');
   const modal = $('#infoModal');
-  const alert = $('#alert');
   const input = container.querySelector('#input');
   const submit = container.querySelector('#submit');
   const form = container.querySelector('#form');
@@ -32,7 +31,6 @@ export default (element) => {
   };
 
   const alertStore = {
-    state: '',
     title: '',
     url: '',
   };
@@ -71,7 +69,6 @@ export default (element) => {
         const { status, statusText } = err.response;
         alertStore.title = `${status} ${statusText}`;
         alertStore.url = url;
-        alertStore.state = 'on';
         throw err;
       });
   };
@@ -103,10 +100,6 @@ export default (element) => {
     const description = button.data('description');
     modalStore.title = title;
     modalStore.description = description;
-  });
-  alert.on('close.bs.alert', (e) => {
-    e.preventDefault();
-    alertStore.state = 'off';
   });
   $(document).ready(() => {
     store.state = 'loading';
@@ -143,19 +136,8 @@ export default (element) => {
     renderModal(modal, title, description);
   });
 
-  watch(alertStore, () => {
-    const { title, url, state } = alertStore;
-    switch (state) {
-      case 'on': {
-        renderAlert(alert, title, url);
-        alert.removeClass('d-none');
-        break;
-      }
-      case 'off': {
-        alert.addClass('d-none');
-        break;
-      }
-      default: break;
-    }
+  watch(alertStore, 'url', () => {
+    const { title, url } = alertStore;
+    renderAlert(element, title, url);
   });
 };
