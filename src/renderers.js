@@ -1,12 +1,12 @@
-export const renderList = (feedList, listId, doc) => {
+export const renderList = (feeds, news, listId, doc) => {
   const list = doc.querySelector(listId);
   list.innerHTML = `
-    ${feedList.map(feed => `
+    ${feeds.map((feed, i) => `
       <div class="feed">
-          <h5>${feed.headerTitle}</h5>
-          <p>${feed.headerDescription}</p>
+          <h5>${feed.title}</h5>
+          <p>${feed.description}</p>
           <div class="content">
-            ${feed.items.map(item => `<div class="item mb-1 mt-1 d-flex align-items-center">
+            ${news[i].items.map(item => `<div class="item mb-1 mt-1 d-flex align-items-center">
               <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info pt-2 pb-2 mr-2" data-toggle="modal" data-target="#infoModal" data-description="${item.description}" data-title="${item.title}">
               </button>
               <a href="${item.link}" target="_blank">${item.title}</a>
@@ -20,14 +20,20 @@ export const renderList = (feedList, listId, doc) => {
 
 export const renderInput = (valid, inputId, doc) => {
   const input = doc.querySelector(inputId);
-  if (valid) {
-    input.classList.remove('alert-danger');
-    input.classList.add('alert-dark');
-    input.placeholder = 'Enter RSS link';
-  } else {
-    input.classList.remove('alert-dark');
-    input.classList.add('alert-danger');
-    input.placeholder = 'Invalid link';
+  switch (valid) {
+    case 'valid': {
+      input.classList.remove('alert-danger');
+      input.classList.add('alert-dark');
+      input.placeholder = 'Enter RSS link';
+      break;
+    }
+    case 'invalid': {
+      input.classList.remove('alert-dark');
+      input.classList.add('alert-danger');
+      input.placeholder = 'Invalid link';
+      break;
+    }
+    default: break;
   }
   input.value = '';
 };

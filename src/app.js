@@ -2,7 +2,9 @@ import $ from 'jquery';
 import { watch } from 'melanke-watchjs';
 import axios from 'axios';
 import { differenceBy } from 'lodash';
-import { validateUrl, parseData } from './utils';
+import {
+  validateUrl, parseData, getRSSTag, getRssItems,
+} from './utils';
 import {
   renderList, renderInput, renderModal, renderAlert,
 } from './renderers';
@@ -21,61 +23,60 @@ export default (element) => {
     state: '',
     currentUrl: '',
     links: [],
-  };
-
-  const feedList = [];
-
-  const modalStore = {
-    title: '',
-    description: '',
-  };
-
-  const alertStore = {
-    title: '',
-    url: '',
+    feeds: [],
+    newsList: [],
+    modal: {},
+    alert: {},
   };
 
   const fields = ['title', 'link', 'description'];
 
-  const addFeed = (feed, url) => {
-    const currentFeed = feedList.find(item => item.url === url);
-    const newItems = differenceBy(feed.items, currentFeed.items, 'link');
+  const addNews = (news, url) => {
+    const currentNewsBlock = store.newsList.find(item => item.url === url);
+    const newItems = differenceBy(news.items, currentNewsBlock.items, 'link');
     if (newItems.length > 0) {
-      currentFeed.items.push(...newItems);
+      currentNewsBlock.items.push(...newItems);
     }
   };
 
-  const updateList = (feed, url) => {
-    const isCurrentUrlProcessed = feedList
+  const addFeed = (doc, url) => {
+    const items = getRssItems(doc, fields);
+    const news = { items, url };
+    const isCurrentUrlAdded = store.feeds
       .map(item => item.url)
       .includes(url);
-    if (isCurrentUrlProcessed) {
-      addFeed(feed, url);
+    if (isCurrentUrlAdded) {
+      addNews(news, url);
     } else {
-      feedList.push(feed);
+      const title = getRSSTag(doc, 'title');
+      const description = getRSSTag(doc, 'description');
+      const feed = { title, description, url };
+      store.feeds.push(feed);
+      store.newsList.push(news);
     }
   };
 
   const fetchRSS = (url) => {
     axios.get(`${cors}${url}`)
       .then((response) => {
-        const feed = parseData(response.data, url, fields);
-        updateList(feed, url);
+        const doc = parseData(response.data, url, fields);
+        addFeed(doc, url);
         setTimeout(() => {
           fetchRSS(url);
         }, 5000);
       })
       .catch((err) => {
         const { status, statusText } = err.response;
-        alertStore.title = `${status} ${statusText}`;
-        alertStore.url = url;
+        const title = `${status} ${statusText}`;
+        store.alert = { title, url };
         throw err;
       });
   };
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const url = e.srcElement[0].value;
+    const formdata = new FormData(e.target);
+    const url = formdata.get('url');
     store.currentUrl = url;
     const isValid = validateUrl(store.links, url);
     if (isValid) {
@@ -98,8 +99,7 @@ export default (element) => {
     const button = $(event.relatedTarget);
     const title = button.data('title');
     const description = button.data('description');
-    modalStore.title = title;
-    modalStore.description = description;
+    store.modal = { title, description };
   });
   $(document).ready(() => {
     store.state = 'loading';
@@ -112,11 +112,11 @@ export default (element) => {
         break;
       }
       case 'invalid': {
-        renderInput(false, '#input', container);
+        renderInput('invalid', '#input', container);
         break;
       }
       case 'valid': {
-        renderInput(true, '#input', container);
+        renderInput('valid', '#input', container);
         break;
       }
       case 'exampleLinksClick': {
@@ -127,17 +127,18 @@ export default (element) => {
       default: break;
     }
   });
-  watch(feedList, () => {
-    renderList(feedList, '#list', container);
+  watch(store, 'newsList', () => {
+    const { feeds, newsList } = store;
+    renderList(feeds, newsList, '#list', container);
   });
 
-  watch(modalStore, () => {
-    const { title, description } = modalStore;
+  watch(store, 'modal', () => {
+    const { title, description } = store.modal;
     renderModal(modal, title, description);
   });
 
-  watch(alertStore, 'url', () => {
-    const { title, url } = alertStore;
+  watch(store, 'alert', () => {
+    const { title, url } = store.alert;
     renderAlert(element, title, url);
   });
 };
