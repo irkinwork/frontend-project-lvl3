@@ -59,7 +59,7 @@ export default (element) => {
   const fetchRSS = (url) => {
     axios.get(`${cors}${url}`)
       .then((response) => {
-        const doc = parseData(response.data, url);
+        const doc = parseData(response.data);
         addFeed(doc, url);
         setTimeout(() => {
           fetchRSS(url);
