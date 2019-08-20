@@ -42,10 +42,10 @@ export default (element) => {
   const addFeed = (doc, url) => {
     const items = getRssItems(doc, fields);
     const news = { items, url };
-    const isCurrentUrlAdded = store.feeds
+    const isCurrentFeedAdded = store.feeds
       .map(item => item.url)
       .includes(url);
-    if (isCurrentUrlAdded) {
+    if (isCurrentFeedAdded) {
       addNews(news, url);
     } else {
       const title = getRSSTag(doc, 'title');
