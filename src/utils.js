@@ -14,7 +14,7 @@ const cleanCdata = (value) => {
 };
 
 export const parseData = data => parser.parseFromString(data, 'text/xml');
-export const getRSSTag = (data, tag) => data.querySelector(tag).innerHTML;
+export const getRssTag = (data, tag) => data.querySelector(tag).innerHTML;
 
 export const getRssItems = (data, fields) => {
   const htmlColl = data.querySelectorAll('item');
