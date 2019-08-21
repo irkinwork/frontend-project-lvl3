@@ -14,13 +14,13 @@ const cleanCdata = (value) => {
 };
 
 export const parseData = data => parser.parseFromString(data, 'text/xml');
-export const getRssTag = (data, tag) => data.querySelector(tag).innerHTML;
+export const getRssTagValue = (data, tag) => data.querySelector(tag).innerHTML;
 
 export const getRssItems = (data, fields) => {
   const htmlColl = data.querySelectorAll('item');
   return Array.from(htmlColl).map(node => fields
     .reduce((acc, field) => {
-      const value = node.querySelector(field).innerHTML;
+      const value = getRssTagValue(node, field);
       return { ...acc, [field]: cleanCdata(value) };
     }, {}));
 };
