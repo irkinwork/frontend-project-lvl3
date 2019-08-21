@@ -1,19 +1,21 @@
 export const renderList = (feeds, news, listId, doc) => {
   const list = doc.querySelector(listId);
   list.innerHTML = `
-    ${feeds.map((feed, i) => `
-      <div class="feed">
+    ${feeds.map((feed) => {
+    const newsBlock = news.find(item => item.url === feed.url);
+    return `<div class="feed">
           <h5>${feed.title}</h5>
           <p>${feed.description}</p>
           <div class="content">
-            ${news[i].items.map(item => `<div class="item mb-1 mt-1 d-flex align-items-center">
+            ${newsBlock.items.map(item => `<div class="item mb-1 mt-1 d-flex align-items-center">
               <button tabindex="0"  type="button" class="btnModal btn-sm btn btn-info pt-2 pb-2 mr-2" data-toggle="modal" data-target="#infoModal" data-description="${item.description}" data-title="${item.title}">
               </button>
               <a href="${item.link}" target="_blank">${item.title}</a>
               </div>`).join('')}
           </div>
         <hr>
-        </div>`).join('')}
+        </div>`;
+  }).join('')}
       </div>
     </div>`;
 };
