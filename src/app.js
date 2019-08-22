@@ -3,7 +3,7 @@ import { watch } from 'melanke-watchjs';
 import axios from 'axios';
 import { differenceBy } from 'lodash';
 import {
-  validateUrl, parseData, getRssTagValue, getRssItems,
+  validateUrl, getRssTagValue, getRssItems,
 } from './utils';
 import {
   renderList, renderInput, renderModal, renderAlert,
@@ -39,8 +39,8 @@ export default (element) => {
     }
   };
 
-  const addFeed = (doc, url) => {
-    const items = getRssItems(doc, fields);
+  const addFeed = (data, url) => {
+    const items = getRssItems(data, fields);
     const news = { items, url };
     const isCurrentFeedAdded = store.feeds
       .map(item => item.url)
@@ -48,8 +48,8 @@ export default (element) => {
     if (isCurrentFeedAdded) {
       addNews(news, url);
     } else {
-      const title = getRssTagValue(doc, 'title');
-      const description = getRssTagValue(doc, 'description');
+      const title = getRssTagValue(data, 'title');
+      const description = getRssTagValue(data, 'description');
       const feed = { title, description, url };
       store.feeds.push(feed);
       store.newsList.push(news);
@@ -59,8 +59,7 @@ export default (element) => {
   const fetchRSS = (url) => {
     axios.get(`${cors}${url}`)
       .then((response) => {
-        const doc = parseData(response.data);
-        addFeed(doc, url);
+        addFeed(response.data, url);
         setTimeout(() => {
           fetchRSS(url);
         }, 5000);

@@ -1,7 +1,5 @@
 import { isURL, isMimeType } from 'validator';
 
-const parser = new DOMParser();
-
 export const validateUrl = (links, url) => {
   const isNew = !links.includes(url);
   const isValid = isURL(url) && isMimeType('text/xml');
@@ -13,14 +11,19 @@ const cleanCdata = (value) => {
   return regex.test(value) ? value.replace(/<!\[CDATA\[/g, '').replace(/]]>/g, '') : value;
 };
 
-export const parseData = data => parser.parseFromString(data, 'text/xml');
-export const getRssTagValue = (data, tag) => data.querySelector(tag).innerHTML;
+export const getRssTagValue = (data, tag) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(data, 'text/xml');
+  return doc.querySelector(tag).innerHTML;
+};
 
 export const getRssItems = (data, fields) => {
-  const htmlColl = data.querySelectorAll('item');
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(data, 'text/xml');
+  const htmlColl = doc.querySelectorAll('item');
   return Array.from(htmlColl).map(node => fields
     .reduce((acc, field) => {
-      const value = getRssTagValue(node, field);
+      const value = node.querySelector(field).innerHTML;
       return { ...acc, [field]: cleanCdata(value) };
     }, {}));
 };
