@@ -15,4 +15,4 @@ This project was built on Hexlet courses for practicing:
 - DOMParser, Validation
 - Deploy (https://surge.sh)
 
-![](https://irkinwork.github.io/frontend-project-lvl3/preview.png)
+![](https://raw.githubusercontent.com/irkinwork/frontend-project-lvl3/master/preview.png)
