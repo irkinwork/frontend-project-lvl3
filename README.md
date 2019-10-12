@@ -13,4 +13,6 @@ This project was built on Hexlet courses for practicing:
 - AJAX, axios
 - Events, DOM
 - DOMParser, Validation
-- Deploy
+- Deploy (https://surge.sh)
+
+![](https://irkinwork.github.io/frontend-project-lvl3/preview.png)
