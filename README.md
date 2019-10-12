@@ -4,7 +4,8 @@
 http://weary-fan.surge.sh/
 
 # RSS Feader
-### Simple RSS-reader. This project was built on Hexlet courses for practicing:
+### Simple RSS-reader.
+This project was built on Hexlet courses for practicing:
 
 - Webpack
 - jQuery
