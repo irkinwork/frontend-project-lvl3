@@ -1,8 +1,9 @@
-import { isURL, isMimeType } from 'validator';
+import * as yup from 'yup';
 
+const baseUrlSchema = yup.string().url().required();
 export const validateUrl = (links, url) => {
   const isNew = !links.includes(url);
-  const isValid = isURL(url) && isMimeType('text/xml');
+  const isValid = baseUrlSchema.isValidSync(url);
   return isNew && isValid;
 };
 
